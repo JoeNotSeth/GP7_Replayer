@@ -1,0 +1,2473 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>GP7 Replay</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  background: #1e1e2f;
+  color: #333;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Title Bar */
+.title-bar {
+  background: #2d2d44;
+  color: #fff;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.app-title {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.version {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+.window-controls i {
+  margin-left: 12px;
+  opacity: 0.8;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.window-controls i:hover {
+  opacity: 1;
+}
+
+/* Top Bar */
+.top-bar {
+  background: #f8f9fa;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid #dee2e6;
+  flex-wrap: wrap;
+}
+
+.load-section {
+  display: flex;
+  gap: 8px;
+  flex: 2;
+  min-width: 400px;
+}
+
+.load-section input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.load-section input:focus {
+  outline: none;
+  border-color: #4a6fa5;
+  box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.1);
+}
+
+.load-section button {
+  padding: 8px 16px;
+  background: #4a6fa5;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s;
+}
+
+.load-section button:hover {
+  background: #3a5a87;
+}
+
+.load-section button.secondary {
+  background: #6c757d;
+}
+
+.load-section button.secondary:hover {
+  background: #5a6268;
+}
+
+.load-section button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.recording-info {
+  display: flex;
+  gap: 16px;
+  padding: 4px 12px;
+  background: #e9ecef;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+.recording-year { font-weight: 600; color: #4a6fa5; }
+.teacher-name { color: #6c757d; }
+.recording-monthday, .recording-time { color: #495057; }
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: #f28100;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.ready { background: #28a745; }
+.status-dot.loading { background: #ffce1e; animation: pulse 1.5s infinite; }
+.status-dot.error { background: #dc3545; }
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.settings-icon {
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.settings-icon:hover {
+  opacity: 1;
+}
+
+/* Main Layout */
+.main-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  background: #f1f3f5;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 320px;
+  background: white;
+  border-right: 1px solid #dee2e6;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: width 0.2s;
+}
+
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  background: #f8f9fa;
+  color: #4a6fa5;
+}
+
+.tab-btn.active {
+  color: #4a6fa5;
+  border-bottom: 2px solid #4a6fa5;
+  font-weight: 500;
+}
+
+.tab-content {
+  display: none;
+  flex: 1;
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.tab-content.active {
+  display: flex;
+}
+
+/* Chat Tab */
+.chat-search {
+  padding: 12px;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-search i {
+  color: #adb5bd;
+}
+
+.chat-search input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 13px;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-message {
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 100%;
+}
+
+.chat-message .message-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.message-author {
+  font-weight: 600;
+  color: #4a6fa5;
+}
+
+.message-time {
+  color: #adb5bd;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.message-time:hover {
+  color: #4a6fa5;
+  text-decoration: underline;
+}
+
+.message-text {
+  word-wrap: break-word;
+}
+
+/* Participants Tab */
+.participants-list {
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.participant-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.participant-item:hover {
+  background: #f8f9fa;
+}
+
+
+
+.participant-avatar {
+  width: 32px;
+  height: 32px;
+  background: #4a6fa5;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.participant-info {
+  flex: 1;
+}
+
+.participant-name {
+  font-weight: 500;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.participant-role {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: #e9ecef;
+  border-radius: 10px;
+  color: #495057;
+}
+
+.role-teacher {
+  background: #dc3545 !important;
+  color: white !important;
+}
+
+.participant-status {
+  font-size: 11px;
+  color: #28a745;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.participant-status i {
+  font-size: 8px;
+}
+
+/* Info Tab */
+.info-section {
+  padding: 16px;
+}
+
+.info-section h4 {
+  margin-bottom: 16px;
+  color: #495057;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #e9ecef;
+  font-size: 13px;
+}
+
+.info-row span:first-child {
+  color: #6c757d;
+}
+
+.info-row span:last-child {
+  font-weight: 500;
+  color: #212529;
+}
+
+/* Resize Handle */
+.sidebar-resize-handle {
+  position: absolute;
+  right: -3px;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+}
+
+.sidebar-resize-handle:hover {
+  background: rgba(74, 111, 165, 0.3);
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.canvas-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #2d2d44;
+  position: relative;
+  overflow: auto;
+}
+
+#canvas {
+  border: 1px solid #dee2e6;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.canvas-controls {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background: white;
+  border-radius: 30px;
+  padding: 4px;
+  display: flex;
+  gap: 2px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.canvas-controls button {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.canvas-controls button:hover {
+  background: #e9ecef;
+  color: #4a6fa5;
+}
+
+.slide-indicator {
+  margin-left: 8px;
+  padding: 0 12px;
+  font-size: 12px;
+  color: #6c757d;
+  border-left: 1px solid #dee2e6;
+}
+
+/* Playback Bar */
+.playback-bar {
+  background: white;
+  border-top: 1px solid #dee2e6;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timeline-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timeline {
+  flex: 1;
+  height: 40px;
+  background: #e9ecef;
+  border-radius: 20px;
+  position: relative;
+  cursor: pointer;
+}
+
+.timeline-progress {
+  height: 100%;
+  background: #4a6fa5;
+  border-radius: 20px;
+  width: 0%;
+  position: relative;
+  z-index: 1;
+}
+
+.timeline-markers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.timeline-marker {
+  position: absolute;
+  width: 2px;
+  height: 100%;
+  background: rgba(255,255,255,0.5);
+  transform: translateX(-50%);
+}
+
+.timeline-thumbnail {
+  position: absolute;
+  bottom: 50px;
+  left: 0;
+  transform: translateX(-50%);
+  background: white;
+  border: 2px solid #4a6fa5;
+  border-radius: 6px;
+  padding: 4px;
+  display: none;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.time-display {
+  font-family: monospace;
+  font-size: 14px;
+  color: #495057;
+  min-width: 100px;
+  text-align: right;
+}
+
+.playback-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.playback-controls button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.playback-controls button:hover {
+  background: #e9ecef;
+  color: #4a6fa5;
+}
+
+#playBtn {
+  background: #4a6fa5;
+  color: white;
+  width: 48px;
+  height: 48px;
+}
+
+#playBtn:hover {
+  background: #3a5a87;
+}
+
+.speed-control select {
+  padding: 6px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+
+.speed-control select:hover {
+  border-color: #4a6fa5;
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.volume-control i {
+  width: 20px;
+  color: #6c757d;
+  cursor: pointer;
+}
+
+.volume-control input {
+  width: 80px;
+  cursor: pointer;
+}
+
+/* Debug Panel */
+.debug-panel {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 400px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px 8px 0 0;
+  padding: 16px;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  z-index: 1000;
+  display: none;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .sidebar { width: 280px; }
+  .recording-info { display: none; }
+}
+
+@media (max-width: 768px) {
+  .main-layout { flex-direction: column; }
+  .sidebar { width: 100%; height: 300px; }
+  .load-section { min-width: auto; }
+}
+
+/* Debug Panel Enhancements */
+.debug-panel {
+  background: #f8f9fa;
+  border: 1px solid #4a6fa5;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+  font-size: 13px;
+}
+
+.debug-panel h4 {
+  margin: 0 0 12px 0;
+  color: #4a6fa5;
+  font-size: 16px;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 8px;
+}
+
+.debug-panel textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+  background: #fff;
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+.debug-panel input[type="text"] {
+  width: calc(100% - 80px);
+  padding: 6px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px 0 0 4px;
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.debug-panel button {
+  padding: 6px 12px;
+  background: #4a6fa5;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 4px;
+  transition: background 0.2s;
+}
+
+.debug-panel button:hover {
+  background: #3a5a87;
+}
+
+.debug-panel button.close-btn {
+  background: #6c757d;
+  float: right;
+  margin: 0;
+}
+
+.debug-panel button.close-btn:hover {
+  background: #5a6268;
+}
+
+.debug-panel label {
+  display: inline-block;
+  margin: 8px 0 4px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.debug-panel br {
+  display: none; /* Hide line breaks to keep layout clean */
+}
+
+/* Draggable & Resizable Debug Panel */
+.debug-panel {
+  position: fixed !important;
+  background: #f8f9fa;
+  border: 1px solid #4a6fa5;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  resize: none; /* We'll use custom resize */
+  overflow: hidden;
+  transition: none; /* Prevent transition during drag */
+}
+
+.debug-header {
+  padding: 10px 16px;
+  background: #4a6fa5;
+  color: white;
+  border-radius: 8px 8px 0 0;
+  cursor: move;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+
+.debug-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+}
+
+.debug-header .close-btn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.debug-header .close-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.debug-content {
+  padding: 16px;
+  overflow-y: auto;
+  height: calc(100% - 50px); /* Adjust based on header height */
+}
+
+.vtt-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  font-size: 12px;
+  background: #e9ecef;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.vtt-info span {
+  font-weight: 600;
+  color: #495057;
+  white-space: nowrap;
+}
+
+.vtt-info input[type="text"] {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 12px;
+  background: #fff;
+  font-family: monospace;
+}
+
+.vtt-info button {
+  background: #4a6fa5;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.audio-url-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+}
+
+.audio-url-row span {
+  font-weight: 600;
+  color: #495057;
+  white-space: nowrap;
+}
+
+.audio-url-row input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 12px;
+  background: #fff;
+}
+
+.audio-url-row button {
+  padding: 4px 8px;
+  background: #4a6fa5;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.timestamp-jump {
+  margin: 16px 0 12px;
+  padding: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+}
+
+.timestamp-jump label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: #495057;
+  font-size: 12px;
+}
+
+.timestamp-row {
+  display: flex;
+  gap: 8px;
+}
+
+.timestamp-row input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.timestamp-row button {
+  padding: 6px 16px;
+  background: #4a6fa5;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.timestamp-row button:hover {
+  background: #3a5a87;
+}
+
+.debug-actions {
+  margin-top: 16px;
+  text-align: right;
+}
+
+.debug-actions button {
+  padding: 6px 16px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.debug-actions button:hover {
+  background: #5a6268;
+}
+
+.debug-resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, #4a6fa5 50%);
+  border-bottom-right-radius: 8px;
+}
+
+.debug-resize-handle:hover {
+  background: linear-gradient(135deg, transparent 50%, #3a5a87 50%);
+}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body> 
+  <!-- Title Bar --> 
+  <div class="title-bar"> 
+    <span class="app-title">GP7 Replay <span class="version">v12.1 Beta</span></span> 
+    <div class="window-controls"> 
+      <i class="fas fa-minus"></i> 
+      <i class="far fa-square"></i> 
+      <i class="fas fa-times"></i> 
+    </div> 
+  </div> 
+ 
+  <!-- Top Bar --> 
+  <div class="top-bar"> 
+    <div class="load-section"> 
+      <input id="replayUrl" type="text" placeholder="Enter replay link or access code..."> 
+      <button id="loadBtn" onclick="autoFetchReplay()"> 
+        <i class="fas fa-download"></i> Load 
+      </button> 
+      <button id="debugBtn" onclick="toggleDebug()" class="secondary"> 
+        <i class="fas fa-bug"></i> 
+      </button> 
+    </div> 
+    
+    <div class="recording-info" id="recordingInfo" style="display: none;"> 
+      <span class="recording-year">?</span> 
+      <span class="teacher-name">?</span> 
+      <span class="recording-monthday">?</span> 
+      <span class="recording-time">?</span> 
+    </div> 
+    
+    <div class="status-indicator" id="statusIndicator"> 
+      <span class="status-dot"></span> 
+      <span class="status-text">Not Loaded</span> 
+      <i class="fas fa-cog settings-icon"></i> 
+    </div> 
+  </div> 
+ 
+  <!-- Main Layout --> 
+  <div class="main-layout"> 
+    <!-- Left Sidebar --> 
+    <div class="sidebar" id="sidebar"> 
+      <div class="sidebar-tabs"> 
+        <button class="tab-btn active" data-tab="chat"><i class="fas fa-comment"></i> Chat</button> 
+        <button class="tab-btn" data-tab="participants"><i class="fas fa-users"></i> People</button> 
+        <button class="tab-btn" data-tab="info"><i class="fas fa-info-circle"></i> Info</button> 
+      </div> 
+      
+      <!-- Chat Tab Content --> 
+      <div class="tab-content active" id="chatTab"> 
+        <div class="chat-search"> 
+          <i class="fas fa-search"></i> 
+          <input type="text" placeholder="Search chat..."> 
+        </div> 
+        <div class="chat-messages" id="chatBox"></div> 
+      </div> 
+      
+      <!-- Participants Tab Content --> 
+      <div class="tab-content" id="participantsTab"> 
+        <div class="participants-list" id="participantsList"> 
+          <!-- Will be populated dynamically --> 
+        </div> 
+      </div> 
+      
+      <!-- Info Tab Content --> 
+      <div class="tab-content" id="infoTab"> 
+        <div class="info-section"> 
+          <h4>Recording Info</h4> 
+          <div class="info-row"><span>Class:</span> <span id="infoClassName">-</span></div> 
+          <div class="info-row"><span>Teacher:</span> <span id="infoTeacher">-</span></div> 
+          <div class="info-row"><span>Date:</span> <span id="infoDate">-</span></div> 
+          <div class="info-row"><span>Duration:</span> <span id="infoDuration">-</span></div> 
+          <div class="info-row"><span>Messages:</span> <span id="infoMessages">0</span></div> 
+          <div class="info-row"><span>Participants:</span> <span id="infoParticipants">0</span></div> 
+        </div> 
+      </div> 
+      
+      <div class="sidebar-resize-handle"></div> 
+    </div> 
+    
+    <!-- Main Content Area --> 
+    <div class="main-content"> 
+      <div class="canvas-container"> 
+        <canvas id="canvas" width="1000" height="800"></canvas> 
+        
+        <!-- Canvas Controls --> 
+        <div class="canvas-controls"> 
+          <button onclick="canvasZoomIn()" title="Zoom In"><i class="fas fa-search-plus"></i></button> 
+          <button onclick="canvasZoomOut()" title="Zoom Out"><i class="fas fa-search-minus"></i></button> 
+          <button onclick="canvasFitToScreen()" title="Fit to Screen"><i class="fas fa-expand-arrows-alt"></i></button> 
+          <button onclick="toggleFullscreen()" title="Fullscreen"><i class="fas fa-expand"></i></button> 
+          <span class="slide-indicator" id="slideIndicator">Slide 0/0</span> 
+        </div> 
+      </div> 
+    </div> 
+  </div> 
+  
+  <!-- Bottom Playback Bar --> 
+  <div class="playback-bar"> 
+    <div class="timeline-container"> 
+      <div class="timeline" id="timeline"> 
+        <div class="timeline-progress" id="timelineProgress"></div> 
+        <div class="timeline-markers" id="timelineMarkers"></div> 
+        <div class="timeline-thumbnail" id="timelineThumbnail" style="display: none;"></div> 
+      </div> 
+      <div class="time-display"> 
+        <span id="currentTime">0:00</span> / <span id="totalTime">0:00</span> 
+      </div> 
+    </div> 
+    
+    <div class="playback-controls"> 
+      <button onclick="skipBackward()" title="Skip Back 10s"><i class="fas fa-undo-alt"></i> 10</button> 
+      <button id="playBtn" onclick="togglePlay()"><i class="fas fa-play"></i></button> 
+      <button onclick="skipForward()" title="Skip Forward 10s">10  <i class="fas fa-redo-alt"></i></button> 
+      <button onclick="restart()" title="Restart"><i class="fas fa-stop"></i></button> 
+      
+      <div class="speed-control"> 
+        <select id="playbackSpeed" onchange="changePlaybackSpeed()"> 
+          <option value="0.5">0.5x</option> 
+          <option value="1" selected>1x</option> 
+          <option value="1.5">1.5x</option> 
+          <option value="2">2x</option> 
+        </select> 
+      </div> 
+      
+      <div class="volume-control"> 
+        <i class="fas fa-volume-up" id="volumeIcon" onclick="toggleMute()"></i> 
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="0.8"> 
+      </div> 
+    </div> 
+  </div> 
+  
+  <!-- Hidden Audio Element --> 
+  <audio id="audio"></audio> 
+  
+  <!-- Debug Panel (Hidden by default) -->
+  <div id="debugPanel" class="debug-panel" style="display: none; position: fixed; bottom: 20px; right: 20px; width: 450px; max-width: 80vw; height: auto; min-height: 300px; max-height: 80vh; z-index: 1000;">
+    <div class="debug-header" id="debugHeader">
+      <h4>Debug Panel</h4>
+      <button onclick="toggleDebug()" class="close-btn">Close</button>
+    </div>
+    
+    <div class="debug-content">
+      <p>Raw Log (auto filled after loading):</p>
+      <textarea id="input" placeholder="auto-filled VTT log will appear here..." rows="6"></textarea>
+      
+      <div class="vtt-info">
+        <span>VTT File:</span>
+        <input id="vttUrlInput" type="text" readonly placeholder="VTT URL will appear here" value="">
+        <button onclick="copyVTTUrl()" title="Copy URL to clipboard"><i class="fas fa-copy"></i></button>
+      </div>
+      
+      <div class="audio-url-row">
+        <span>Audio File: </span>
+        <input id="audioUrl" type="text" placeholder="Audio URL will appear here" readonly>
+        <button onclick="loadAudioFromDebug()">Load Audio</button>
+      </div>
+      
+      <div class="timestamp-jump">
+        <label>Jump to timestamp (ms):</label>
+        <div class="timestamp-row">
+          <input type="number" id="timestampInput" placeholder="e.g., 108000" value="0" min="0">
+          <button onclick="jumpToTimestamp()">Go</button>
+        </div>
+        <small style="display: block; margin-top: 4px; color: #6c757d;">Enter milliseconds (e.g., 108000 = 1:48)</small>
+      </div>
+      
+      <div class="debug-actions">
+        <button onclick="clearAll()">Clear All</button>
+      </div>
+    </div>
+    
+    <!-- Resize Handle -->
+    <div class="debug-resize-handle"></div>
+  </div>
+</body>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<script>
+/* ================================================================
+  NOTHING HERE, GO AWAY.
+  (0w0)
+  There is lot here that need optimization, pls help if you can :D
+===============================================================*/
+
+/*---COPY RIGHTS NOTICE---*/
+function warnCopyRight() {
+  alert("WARNING, this web app is for TPS students to replay GP7 classroom recordings only. Not responsible for any misuse.");
+  console.log("GP7 Replay Loader v12.1 Beta by JoeNotSeth");
+  console.log("Design to replay GP7 classroom recordings for TPS students.");
+  console.log("Not reposible for any misuse.");
+}
+warnCopyRight();
+/*---END COPY RIGHTS NOTICE---*/
+
+// ================ GLOBAL VARIABLES ================
+// Declare ALL global variables here, at the very top
+let currentAudioUrl = null;        // Store audio URL
+let vttUrl = null;                 // Store VTT URL for debug panel
+let recordingDateISO = null;        // ISO date string from VTT header
+let events = [];                   // Store all events
+let slideBackgrounds = {};          // Store slide images
+let currentSlide = null;            // Current slide ID
+let objects = {};                   // Whiteboard objects
+// Debug panel drag/resize variables
+let debugIsDragging = false;
+let debugIsResizing = false;
+let debugDragOffsetX = 0, debugDragOffsetY = 0;
+let debugInitialWidth = 0, debugInitialHeight = 0;
+let debugInitialMouseX = 0, debugInitialMouseY = 0;
+let raf = null;                     // Animation frame handle
+let playIndex = 0;                  // Current event index
+let rafHandle = null;               // Another animation handle
+let canvasScale = 1;                 // Canvas zoom scale
+let canvasTranslateX = 0;            // Canvas pan X
+let canvasTranslateY = 0;            // Canvas pan Y
+let isResizing = false;              // Sidebar resize state
+let lastDownX = 0;                   // Last mouse X for resize
+let key = null;                     // Replay access key
+let totalSlides = 0;                // Total number of slides
+let slideOrder = [];                 // Array of slide IDs in order of first appearance
+let rawVTT = '';                       // Store raw VTT content for debug panel
+let participants = {};                   // Store participant info keyed by uuid
+let globalYOffset = 0;                   // Teacher's scroll offset
+let currentPresenterUuid = null;         // UUID of the current presenter (teacher)
+let apiTeacherName = null;               // Teacher name from API response
+// ==================================================
+
+// ================ DOM ELEMENTS ================
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const audio = document.getElementById('audio');
+const chatBox = document.getElementById('chatBox');
+const playBtn = document.getElementById('playBtn');
+const volumeSlider = document.getElementById('volumeSlider');
+const volumeIcon = document.getElementById('volumeIcon');
+const timeline = document.querySelector('.timeline');
+// ==================================================
+
+// ================ AUDIO FUNCTIONS ================
+// Timeline seek
+timeline.addEventListener('click', function(e) {
+  const rect = this.getBoundingClientRect();
+  const percent = (e.clientX - rect.left) / rect.width;
+  audio.currentTime = percent * audio.duration;
+});
+
+// Playback speed
+function changePlaybackSpeed() {
+  audio.playbackRate = parseFloat(document.getElementById('playbackSpeed').value);
+}
+ 
+// Skip functions
+function skipForward() {
+  audio.currentTime = Math.min(audio.currentTime + 10, audio.duration);
+}
+ 
+function skipBackward() {
+  audio.currentTime = Math.max(audio.currentTime - 10, 0);
+}
+
+// Volume control
+volumeSlider.addEventListener('input', function() {
+  audio.volume = this.value;
+  updateVolumeIcon();
+});
+
+function toggleMute() {
+  audio.muted = !audio.muted;
+  updateVolumeIcon();
+}
+
+function updateVolumeIcon() {
+  if (audio.muted || audio.volume === 0) {
+    volumeIcon.className = 'fas fa-volume-mute';
+  } else if (audio.volume < 0.5) {
+    volumeIcon.className = 'fas fa-volume-down';
+  } else {
+    volumeIcon.className = 'fas fa-volume-up';
+  }
+}
+
+// Format time
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Parse recording date into components
+function parseRecordingDate(isoString) {
+  if (!isoString) return null;
+  try {
+    const date = new Date(isoString);
+    return {
+      year: date.getFullYear().toString(),
+      monthday: date.toLocaleString('en-US', { month: 'short', day: 'numeric' }),
+      time: date.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+    };
+  } catch (e) {
+    console.warn("Failed to parse date:", isoString);
+    return null;
+  }
+}
+
+// Audio event listeners
+audio.addEventListener('timeupdate', function() {
+  const percent = (audio.currentTime / audio.duration) * 100 || 0;
+  document.getElementById('timelineProgress').style.width = percent + '%';
+  document.getElementById('currentTime').textContent = formatTime(audio.currentTime);
+});
+
+audio.addEventListener('loadedmetadata', function() {
+  document.getElementById('totalTime').textContent = formatTime(audio.duration);
+});
+
+// Seek to time
+function seekToTime(timeMs) {
+  audio.currentTime = timeMs / 1000;
+}
+
+function jumpToTimestamp() {
+  if (!audio.src || !audio.duration) {
+    alert("No audio loaded. Load a replay first.");
+    return;
+  }
+  const input = document.getElementById('timestampInput');
+  const ms = parseInt(input.value);
+  if (isNaN(ms) || ms < 0) {
+    alert("Please enter a valid positive number (milliseconds).");
+    return;
+  }
+  const seconds = ms / 1000;
+  if (seconds > audio.duration) {
+    alert(`Time exceeds recording duration (${formatTime(audio.duration)}).`);
+    return;
+  }
+  audio.currentTime = seconds;
+  // The seeked event will handle updating the display and canvas
+}
+// ==================================================
+
+// ================================================================
+// NEW UI FUNCTIONS
+// ================================================================
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    
+    this.classList.add('active');
+    const tabId = this.dataset.tab + 'Tab';
+    document.getElementById(tabId).classList.add('active');
+  });
+});
+
+// Sidebar resizing
+// let isResizing = false;
+// let lastDownX = 0;
+// Global variables are now declared at the top of the script
+
+const sidebar = document.getElementById('sidebar');
+const handle = document.querySelector('.sidebar-resize-handle');
+
+handle.addEventListener('mousedown', function(e) {
+  isResizing = true;
+  lastDownX = e.clientX;
+  document.body.style.cursor = 'col-resize';
+});
+
+document.addEventListener('mousemove', function(e) {
+  if (!isResizing) return;
+  
+  const delta = e.clientX - lastDownX;
+  const newWidth = sidebar.offsetWidth + delta;
+  
+  if (newWidth >= 200 && newWidth <= 500) {
+    sidebar.style.width = newWidth + 'px';
+    lastDownX = e.clientX;
+  }
+});
+
+document.addEventListener('mouseup', function() {
+  isResizing = false;
+  document.body.style.cursor = 'default';
+});
+
+// Canvas zoom functions
+// let canvasScale = 1;
+// let canvasTranslateX = 0;
+// let canvasTranslateY = 0;
+
+function canvasZoomIn() {
+  canvasScale *= 1.2;
+  applyCanvasTransform();
+}
+
+function canvasZoomOut() {
+  canvasScale /= 1.2;
+  if (canvasScale < 0.1) canvasScale = 0.1;
+  applyCanvasTransform();
+}
+
+function canvasFitToScreen() {
+  canvasScale = 1;
+  canvasTranslateX = 0;
+  canvasTranslateY = 0;
+  applyCanvasTransform();
+}
+
+function applyCanvasTransform() {
+  canvas.style.transform = `scale(${canvasScale}) translate(${canvasTranslateX}px, ${canvasTranslateY}px)`;
+  canvas.style.transformOrigin = 'top left';
+}
+
+// Fullscreen toggle
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.querySelector('.canvas-container').requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+// Timeline seek - moved to top of script
+
+// Playback speed
+function changePlaybackSpeed() {
+  audio.playbackRate = parseFloat(document.getElementById('playbackSpeed').value);
+}
+
+// Skip functions
+function skipForward() {
+  audio.currentTime = Math.min(audio.currentTime + 10, audio.duration);
+}
+
+function skipBackward() {
+  audio.currentTime = Math.max(audio.currentTime - 10, 0);
+}
+
+// Volume control - moved to top of script
+
+// Format time function - moved to top of script
+
+// Audio event listeners and seekToTime - moved to top of script
+
+/* ================================================================
+   AUTO FETCH SYSTEM
+=================================================================*/
+async function autoFetchReplay() {
+  const loadBtn = document.getElementById("loadBtn");
+  const statusIndicator = document.getElementById('statusIndicator');
+  const statusDot = document.querySelector('.status-dot');
+  const statusText = document.querySelector('.status-text');
+  
+  const link = document.getElementById("replayUrl").value.trim();
+  if (!link) return alert("Please paste the replay link.");
+  
+  // Update status
+  loadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+  loadBtn.disabled = true;
+  statusDot.className = 'status-dot loading';
+  statusText.textContent = 'Loading...';
+
+  // extract key from URL
+  // Try extracting from URL: .../play/123456
+  const keyURLMatch = link.match(/play\/(\d+)/);
+  if (keyURLMatch) {
+   key = keyURLMatch[1];
+  } 
+  // If no match, check if it's a pure access code
+  else if (/^\d+$/.test(link.trim())) {
+   key = link.trim();
+  } 
+  // Still nothing → invalid input
+  else {
+   return alert("Invalid input. Enter a full replay link or numeric access code.");
+  }
+  // API URL
+  const apiUrl = "https://m1.gatherworks.com/api/play?key=" + key;
+
+  try {
+    // fetch JSON
+    const apiJson = await fetch(apiUrl).then(r => r.json());
+
+    const m3u8Url = apiJson.url;
+
+    // Store it globally
+    currentAudioUrl = m3u8Url;
+    vttUrl = apiJson.vtt; // Assign directly to the global vttUrl
+
+    // Update debug panel if it exists
+    const audioUrlInput = document.getElementById("audioUrl");
+    if (audioUrlInput) audioUrlInput.value = m3u8Url;
+    
+    // Update VTT URL input
+    const vttUrlInput = document.getElementById('vttUrlInput');
+    if (vttUrlInput && vttUrl) {
+      vttUrlInput.value = vttUrl;
+    }
+    events = []; // clear old
+    slideBackgrounds = {};
+    currentSlide = null;
+    objects = {};
+    /*
+    streamVTT(vttUrl, handleVTTCue) -> fetch and split .vtt
+    call parseVTTCue(rawCue)
+    parseVTTCue(rawCue)
+
+    */
+    await streamVTT(vttUrl, handleVTTCue);
+
+    // Populate raw log preview in debug panel
+    const rawLogTextarea = document.getElementById('input');
+    if (rawLogTextarea && rawVTT) {
+      const lines = rawVTT.split('\n');
+      const previewLines = lines.slice(0, 50).join('\n');
+      const totalLines = lines.length;
+      rawLogTextarea.value = `--- First 50 of ${totalLines} lines ---\n${previewLines}`;
+    }
+
+    // VERY IMPORTANT: sort after streaming
+    events.sort((a, b) => a.timeMs - b.timeMs);
+    
+    // Update recording date display if we have one from VTT
+    if (recordingDateISO) {
+      const dateParts = parseRecordingDate(recordingDateISO);
+      if (dateParts) {
+        document.querySelector('.recording-year').textContent = dateParts.year;
+        document.querySelector('.recording-monthday').textContent = dateParts.monthday;
+        document.querySelector('.recording-time').textContent = dateParts.time;
+        // Also update info tab
+        document.getElementById('infoDate').textContent = `${dateParts.monthday} ${dateParts.year} ${dateParts.time}`;
+      }
+    }
+    
+    // Count unique slide IDs
+    const slideIds = new Set();
+    events.forEach(ev => {
+      if (ev.type === 'slideChange') slideIds.add(ev.payload.slideId);
+    });
+    totalSlides = slideIds.size;
+    // Update totalSlides based on slideOrder for consistency
+    totalSlides = slideOrder.length;
+
+    // show user alert & restart the recording
+    alert("Replay loaded successfully");
+    loadBtn.innerHTML = '<i class="fas fa-download"></i> Load';
+    loadBtn.disabled = false;
+    
+    // Update status
+    statusDot.className = 'status-dot ready';
+    statusText.textContent = 'Ready';
+    document.getElementById('recordingInfo').style.display = 'flex';
+    
+    // Populate recording info from API response if available
+    if (apiJson.teacher) {
+      apiTeacherName = apiJson.teacher;
+      document.querySelector('.teacher-name').textContent = apiJson.teacher;
+      document.getElementById('infoTeacher').textContent = apiJson.teacher;
+    }
+    
+    restart();
+
+  } catch (e) {
+    alert("Auto load failed: " + e);
+    loadBtn.innerHTML = '<i class="fas fa-download"></i> Load';
+    loadBtn.disabled = false;
+    
+    // Update status
+    statusDot.className = 'status-dot error';
+    statusText.textContent = 'Error';
+  }
+}
+
+/*---stream and parse VTT---*/
+
+async function streamVTT(url, onCue) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch VTT log");
+  const text = await res.text();
+  
+  // Store raw VTT for debug panel
+  rawVTT = text;
+  
+  const lines = text.split(/\r?\n/);
+  
+  // Try to extract recording date from first line
+  const firstLine = lines[0] || '';
+  const dateMatch = firstLine.match(/^GP71\s+(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)$/);
+  if (dateMatch) {
+    recordingDateISO = dateMatch[1];
+  }
+  
+  let currentHeader = null;
+  let jsonBuffer = [];
+  
+  for (const line of lines) {
+    // Check if line is a header (e.g., "state 70")
+    const headerMatch = line.match(/^([a-zA-Z]+)\s+(\d+)$/);
+    if (headerMatch) {
+      // If we have a previous header + JSON, process it
+      if (currentHeader && jsonBuffer.length > 0) {
+        try {
+          const jsonString = jsonBuffer.join('').replace(/\s*DONE\s*$/, ''); // Remove trailing DONE
+          const payload = JSON.parse(jsonString);
+          onCue({
+            timeMs: currentHeader.timestamp,
+            type: currentHeader.type,
+            payload
+            });
+        } catch (e) {
+          console.warn("Failed to parse JSON:", jsonBuffer.join(''), e);
+        }
+      }
+      
+      // Start new header
+      currentHeader = {
+        type: headerMatch[1],
+        timestamp: parseInt(headerMatch[2])
+      };
+      jsonBuffer = [];
+      continue;
+    }
+    
+    // If we're inside a JSON block, collect lines
+    if (currentHeader && line.trim()) {
+      jsonBuffer.push(line);
+    }
+  }
+  
+  // Don't forget the last block
+  if (currentHeader && jsonBuffer.length > 0) {
+    try {
+      const jsonString = jsonBuffer.join('').replace(/\s*DONE\s*$/, ''); // Remove trailing DONE
+      const payload = JSON.parse(jsonString);
+      onCue({
+        timeMs: currentHeader.timestamp,
+        type: currentHeader.type,
+        payload
+        });
+    } catch (e) {
+      console.warn("Failed to parse JSON:", jsonBuffer.join(''), e);
+    }  
+  }
+}
+
+function handleVTTCue(cue) {
+  // cue.type is the header: "state", "chat", "slide", "wb", etc. (more to discover)
+  // cue.timeMs is the timestamp
+  // cue.payload is the JSON
+  
+  // Map your header types to event types
+  if (cue.type === 'wb') {
+    events.push({ timeMs: cue.timeMs, type: 'wb', payload: cue.payload });
+  } 
+  else if (cue.type === 'slide') {
+    // Guard against missing image data
+    if (!cue.payload.data || !cue.payload.data.img || !cue.payload.data.img.src) {
+      console.warn("Slide cue missing image data:", cue);
+      return; // Skip this slide
+    }
+
+    // Handle slide image
+    const slideId = cue.payload.id || ('slide_' + cue.timeMs);
+    registerSlide(slideId);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = cue.payload.data.img.src;
+      
+    // ADD THIS LINE - scale down to fit canvas
+    scaleDownUntilFits(img, canvas.width).then(() => {
+     console.log("Scaled down slide image");
+    });
+  
+    slideBackgrounds[slideId] = img;
+    events.push({ timeMs: cue.timeMs, type: 'slideChange', payload: { slideId } });
+  }
+  else if (cue.type === 'state') {
+    events.push({ timeMs: cue.timeMs, type: 'state', payload: cue.payload });
+    if (cue.payload.slideId) {
+      registerSlide(cue.payload.slideId);
+      events.push({ timeMs: cue.timeMs, type: 'slideChange', payload: { slideId: cue.payload.slideId } });
+    }
+  }
+  else if (cue.type === 'plist') {
+    events.push({ timeMs: cue.timeMs, type: 'plist', payload: cue.payload });
+    console.log("Plist event pushed at", cue.timeMs);
+  }
+  else if (cue.type === 'join') {
+    // Validate payload before pushing
+    if (cue.payload && cue.payload.uuid) {
+      events.push({ timeMs: cue.timeMs, type: 'join', payload: cue.payload });
+    } else {
+      console.warn("Invalid join event payload:", cue.payload);
+    }
+  }
+  else if (cue.type === 'leave') {
+    // Validate payload before pushing
+    if (cue.payload && cue.payload.uuid) {
+      events.push({ timeMs: cue.timeMs, type: 'leave', payload: cue.payload });
+    } else {
+      console.warn("Invalid leave event payload:", cue.payload);
+    }
+  }
+  else if (cue.type === 'chat') {
+    events.push({ timeMs: cue.timeMs, type: 'chat', payload: cue.payload });
+  } 
+  else {
+    const skipTypes = ['plist', 'join', 'leave']; // add any others you don't want to log
+    if (!skipTypes.includes(cue.type)) {
+      console.log("Unhandled cue type:", cue.type);
+    }
+  }
+  // Add more mappings as needed: "state", "meta", "voipRecorder"
+  
+}
+
+
+/* ================================================================
+   PLAY SYSTEM
+=================================================================*/
+// DOM elements are now defined at the top of the script
+
+/* ---------- READING AND PLAYING ---------- */
+
+function attachPayloadAt(tsMs, kind, js) {
+  const t = Number(tsMs);
+
+  if (kind === 'wb') {
+    if (Array.isArray(js)) {
+      for (const ev of js) events.push({ timeMs: t, type: 'wb', payload: ev });
+    } else if (js && js.action) {
+      events.push({ timeMs: t, type: 'wb', payload: js });
+    }
+    return;
+  }
+
+  if (kind === 'slide') {
+    if (js && js.type === 'Image' && js.data?.img?.src) {
+      const slideId = js.id || ('slide_' + t);
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src =  js.data.img.src;
+      scaleDownUntilFits(img, canvas.width).then(() => {
+        console.log("Scaled down img");
+        });
+      slideBackgrounds[slideId] = img;
+      events.push({ timeMs: t, type: 'slideChange', payload: { slideId } });
+    }
+    return;
+  }
+
+  if (kind === 'state') {
+    if (js && js.slideId) {
+      events.push({ timeMs: t, type: 'slideChange', payload: { slideId: js.slideId } });
+    } else {
+      events.push({ timeMs: t, type: 'state', payload: js });
+    }
+    return;
+  }
+
+  if (kind === 'chat') {
+    events.push({ timeMs: t, type: 'chat', payload: js });
+    return;
+  }
+
+  events.push({ timeMs: t, type: kind, payload: js });
+}
+
+function clearObjects() { objects = {}; }
+
+function applyWBEvent(ev) {
+  if (!ev || !ev.action) return;
+  
+  if (ev.action === 'add') {
+    const d = ev.data;
+    
+    // Handle Line objects
+    if (d?.className === 'Line' && d.attrs) {
+      const pts = Array.isArray(d.attrs.points) ? d.attrs.points.slice() : [];
+      objects[d.attrs.id] = { 
+        type: 'line', 
+        points: pts, 
+        stroke: d.attrs.stroke || '#000',
+        lineJoin: d.attrs.lineJoin,
+        lineCap: d.attrs.lineCap
+      };
+    } 
+    // Handle Text objects (store them but don't draw yet)
+    else if (d?.className === 'Text' && d.attrs) {
+      objects[d.attrs.id] = {
+        type: 'text',
+        x: d.attrs.x,
+        y: d.attrs.y,
+        text: d.attrs.text || '',
+        fill: d.attrs.fill || '#333',
+        fontSize: d.attrs.fontSize || 26
+      };
+    }
+    // Add more object types as needed
+    
+  } else if (ev.action === 'change') {
+    const d = ev.data;
+    
+    // Update text content
+    if (objects[d.id] && objects[d.id].type === 'text' && d.text !== undefined) {
+      objects[d.id].text = d.text;
+    }
+    // Update position
+    else if (d.x !== undefined && d.y !== undefined) {
+      if (!objects[d.id]) {
+        objects[d.id] = { type: 'point', x: d.x, y: d.y };
+      } else {
+        objects[d.id].x = d.x; 
+        objects[d.id].y = d.y;
+      }
+    }
+    
+  } else if (ev.action === 'state') {
+    // Handle state changes (e.g., scroll offset)
+    if (ev.name === 'y' && ev.data && ev.data.y !== undefined) {
+      globalYOffset = ev.data.y;
+      console.log("Global Y offset set to", globalYOffset);
+    }
+    // Add other state names if needed (e.g., 'x')
+  } else if (ev.action === 'remove' || ev.action === 'del') {
+    delete objects[ev.data?.id];
+  }
+}
+
+function drawFrame() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  ctx.translate(0, globalYOffset);
+
+  // Draw slide background
+  if (currentSlide && slideBackgrounds[currentSlide]) {
+    const img = slideBackgrounds[currentSlide];
+    if (img.complete && img.naturalWidth) {
+      ctx.drawImage(img, 0, 0);
+    }
+  }
+
+  // Draw whiteboard objects
+  for (const id in objects) {
+    const o = objects[id];
+    if (!o) continue;
+
+    if (o.type === 'point') {
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.arc(o.x, o.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (o.type === 'line') {
+      const p = o.points;
+      if (!p || p.length < 2) continue;
+      ctx.strokeStyle = o.stroke || '#000';
+      ctx.lineWidth = 3;
+      ctx.lineJoin = o.lineJoin || 'round';
+      ctx.lineCap = o.lineCap || 'round';
+      ctx.beginPath();
+      ctx.moveTo(p[0], p[1]);
+      for (let i = 2; i < p.length; i += 2) {
+        ctx.lineTo(p[i], p[i + 1]);
+      }
+      ctx.stroke();
+    }
+
+    if (o.type === 'text') {
+      ctx.fillStyle = o.fill;
+      ctx.font = `${o.fontSize}px Arial`;
+      ctx.fillText(o.text, o.x, o.y);
+    }
+  }
+
+  ctx.restore();
+}
+
+function applyEventsUpTo(timeMs) {
+  currentSlide = null;
+  clearObjects();
+
+  for (const ev of events) {
+    if (ev.timeMs > timeMs) break;
+
+    if (ev.type === 'slideChange') {
+      currentSlide = ev.payload.slideId;
+      clearObjects();
+      globalYOffset = 0; // Reset scroll for new slide
+      updateSlideIndicator();
+    } else if (ev.type === 'wb') {
+      // Handle array of wb events
+      if (Array.isArray(ev.payload)) {
+        for (const wbEv of ev.payload) {
+          applyWBEvent(wbEv);
+        }
+      } else {
+        // Handle single wb event (backward compatibility)
+        applyWBEvent(ev.payload);
+      }
+    }
+    else if (ev.type === 'join') {
+      const p = ev.payload;
+      if (p && p.uuid) {
+        participants[p.uuid] = {
+          name: p.displayname || p.name || 'Unknown',
+          uid: p.uid,
+          online: true
+        };
+        renderParticipantsList();
+      }
+    }
+    else if (ev.type === 'leave') {
+      const p = ev.payload;
+      if (p && p.uuid) {
+        delete participants[p.uuid];
+        renderParticipantsList();
+      }
+    }
+    else if (ev.type === 'plist') {
+      participants = {}; // Reset to current list
+      if (Array.isArray(ev.payload)) {
+        ev.payload.forEach(p => {
+          participants[p.uuid] = {
+            name: p.displayname || p.name || 'Unknown',
+            uid: p.uid,
+            online: true
+          };
+        });
+      }
+      renderParticipantsList();
+      console.log("Applied plist at", ev.timeMs, "participants count:", Object.keys(participants).length);
+    }
+    else if (ev.type === 'state') {
+      if (ev.payload.presenter_uuid) {
+        currentPresenterUuid = ev.payload.presenter_uuid;
+        updateTeacherDisplay();
+      }
+    }
+  }
+
+  drawFrame();
+  renderChatUpTo(timeMs);
+}
+
+function renderChatUpTo(timeMs) {
+  const chatBox = document.getElementById('chatBox');
+  chatBox.innerHTML = '';
+
+  for (const ev of events) {
+    if (ev.type === 'chat' && ev.timeMs <= timeMs) {
+      const div = createChatMessageElement(ev.payload, ev.timeMs);
+      chatBox.appendChild(div);
+    }
+  }
+
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function escapeHtml(s){
+  return String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function createChatMessageElement(ev, timeMs) {
+  const div = document.createElement('div');
+  div.className = 'chat-message';
+  
+  const time = formatTime(timeMs / 1000);
+  const author = ev.from || ev.displayname || ev.name || 'anon';
+  const text = ev.text || ev.message || '';
+  
+  div.innerHTML = `
+    <div class="message-header">
+      <span class="message-author">${escapeHtml(author)}</span>
+      <span class="message-time" onclick="seekToTime(${timeMs})">${time}</span>
+    </div>
+    <div class="message-text">${escapeHtml(text)}</div>
+  `;
+  
+  return div;
+}
+
+function updateTeacherDisplay() {
+  // Update teacher name in top bar
+  const teacherNameElement = document.querySelector('.teacher-name');
+  const infoTeacherElement = document.getElementById('infoTeacher');
+  
+  if (currentPresenterUuid) {
+    const teacher = participants[currentPresenterUuid];
+    if (teacher) {
+      if (teacherNameElement) {
+        teacherNameElement.textContent = teacher.name;
+      }
+      if (infoTeacherElement) {
+        infoTeacherElement.textContent = teacher.name;
+      }
+    } else {
+      // Fallback to API teacher name if participant not found
+      const apiTeacherName = document.querySelector('.teacher-name').textContent;
+      if (teacherNameElement && apiTeacherName && apiTeacherName !== '?') {
+        // Keep the API teacher name
+      } else if (teacherNameElement) {
+        teacherNameElement.textContent = '?';
+      }
+      if (infoTeacherElement && apiTeacherName && apiTeacherName !== '?') {
+        // Keep the API teacher name
+      } else if (infoTeacherElement) {
+        infoTeacherElement.textContent = '?';
+      }
+    }
+  } else {
+    // No presenter UUID, use API teacher name if available
+    const apiTeacherName = document.querySelector('.teacher-name').textContent;
+    if (!apiTeacherName || apiTeacherName === '?') {
+      if (teacherNameElement) {
+        teacherNameElement.textContent = '?';
+      }
+      if (infoTeacherElement) {
+        infoTeacherElement.textContent = '?';
+      }
+    }
+  }
+  renderParticipantsList();
+}
+
+function renderParticipantsList() {
+  console.log("Rendering participants list, count:", Object.keys(participants).length);
+  const container = document.getElementById('participantsList');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  Object.entries(participants).forEach(([uuid, p]) => {
+    const item = document.createElement('div');
+    item.className = 'participant-item';
+    
+    // Highlight teacher
+    if (uuid === currentPresenterUuid) {
+      item.classList.add('teacher');
+    }
+    
+    // Get initial for avatar
+    const initial = (p.name || '?').charAt(0).toUpperCase();
+    
+    const roleText = (uuid === currentPresenterUuid) ? 'teacher' : (p.role || 'student');
+    
+    item.innerHTML = `
+      <div class="participant-avatar">${initial}</div>
+      <div class="participant-info">
+        <div class="participant-name">
+          ${escapeHtml(p.name)}
+          ${uuid === currentPresenterUuid ? '<span class="teacher-badge" title="Teacher"><i class="fas fa-chalkboard-teacher"></i></span>' : ''}
+          <span class="participant-role ${roleText === 'teacher' ? 'role-teacher' : ''}">${roleText}</span>
+        </div>
+        <div class="participant-status">
+          <i class="fas fa-circle"></i> Online
+        </div>
+      </div>
+    `;
+    
+    container.appendChild(item);
+  });
+  
+  // Also update info tab participant count
+  const infoParticipants = document.getElementById('infoParticipants');
+  if (infoParticipants) {
+    infoParticipants.textContent = Object.keys(participants).length;
+  }
+}
+
+/* ---------- DEBUG PANEL ---------- */
+
+function toggleDebug() {
+  const debugPanelStat = document.getElementById("debugPanel");
+  debugPanelStat.style.display = debugPanelStat.style.display === "none" ? "block" : "none";
+}
+
+/* ---------- CANVAS EDIT ---------- */
+
+function canvasEnlarge() {
+  canvasSize = canvas.height;
+  canvas.height = canvasSize + 100;
+  return true;
+}
+
+function canvasReduce() {
+  canvasSize = canvas.height;
+  canvas.height = canvasSize - 100;
+  return true;
+}
+
+/* ---------- IMAGE EDIT ---------- */
+
+function waitForImage(img) {
+  return new Promise(resolve => {
+    if (img.complete) return resolve();
+    img.onload = () => resolve();
+  });
+}
+
+function scaleImageHalfInPlace(img) {
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.floor(img.width / 2);
+  canvas.height = Math.floor(img.height / 2);
+
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  img.src = canvas.toDataURL();
+}
+
+async function scaleDownUntilFits(img, maxWidth) {
+  // ensure initial load only if needed to check width
+  if (!img.complete) {
+    await new Promise(r => img.onload = r);
+  }
+
+  while (img.width > maxWidth) {
+    // scale in place
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.floor(img.width / 2);
+    canvas.height = Math.floor(img.height / 2);
+
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    // setting src is async even for data URLs
+    img.src = canvas.toDataURL();
+
+    // only wait when we know it MUST load new data
+    await new Promise(r => img.onload = r);
+  }
+}
+
+
+/* ---------- AUDIO ---------- */
+function loadAudioFromInput() {
+  // Use the global variable
+  if (!currentAudioUrl) {
+    // Try debug panel as fallback
+    const debugUrl = document.getElementById('audioUrl')?.value.trim();
+    if (debugUrl) {
+      currentAudioUrl = debugUrl;
+    } else {
+      return alert("No audio URL available. Load a replay first.");
+    }
+  }
+  loadAudio(currentAudioUrl);
+}
+
+function loadAudioFromDebug() {
+  const url = document.getElementById('audioUrl').value.trim();
+  if (!url) return alert("Paste .m3u8 URL first.");
+  currentAudioUrl = url; // Update global
+  loadAudio(url);
+}
+
+function loadAudio(url) {
+  if (!url) {
+    console.error("No audio URL provided");
+    return;
+  }
+  
+  if (window.Hls && Hls.isSupported()) {
+    const hls = new Hls();
+    hls.loadSource(url);
+    hls.attachMedia(audio);
+    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+      console.log("Audio loaded successfully");
+      document.querySelector('.status-text').textContent = 'Ready';
+    });
+  } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+    audio.src = url;
+    audio.addEventListener('loadedmetadata', function() {
+      document.querySelector('.status-text').textContent = 'Ready';
+    });
+  } else {
+    alert("Browser doesn't support HLS.");
+  }
+}
+
+/* ---------- SYNC LOOP ---------- */
+// let playIndex = 0;
+// let rafHandle = null;
+// Global variables are now declared at the top of the script
+
+function startSyncLoop() {
+  cancelSyncLoop();
+
+  function frame() {
+    const nowMs = audio.currentTime * 1000;
+
+    while (playIndex < events.length && events[playIndex].timeMs <= nowMs) {
+      const ev = events[playIndex];
+
+      if (ev.type === 'slideChange') {
+        currentSlide = ev.payload.slideId;
+        clearObjects();
+        globalYOffset = 0; // Reset scroll for new slide
+        updateSlideIndicator();
+        drawFrame();
+      } else if (ev.type === 'wb') {
+        // Handle array of wb events
+        if (Array.isArray(ev.payload)) {
+          for (const wbEv of ev.payload) {
+            applyWBEvent(wbEv);
+          }
+        } else {
+          // Handle single wb event
+          applyWBEvent(ev.payload);
+        }
+        drawFrame();
+      }
+      else if (ev.type === 'join') {
+        const p = ev.payload;
+        if (p && p.uuid) {
+          participants[p.uuid] = {
+            name: p.displayname || p.name || 'Unknown',
+            uid: p.uid,
+            online: true
+          };
+          renderParticipantsList();
+        }
+      }
+      else if (ev.type === 'leave') {
+        const p = ev.payload;
+        if (p && p.uuid) {
+          delete participants[p.uuid];
+          renderParticipantsList();
+        }
+      }
+      else if (ev.type === 'plist') {
+        participants = {};
+        if (Array.isArray(ev.payload)) {
+          ev.payload.forEach(p => {
+            participants[p.uuid] = {
+              name: p.displayname || p.name || 'Unknown',
+              uid: p.uid,
+              online: true
+            };
+          });
+        }
+        renderParticipantsList();
+        updateTeacherDisplay(); // Update teacher name if it just became available
+        console.log("Sync plist at", ev.timeMs);
+      }
+      else if (ev.type === 'state') {
+        if (ev.payload.presenter_uuid) {
+          currentPresenterUuid = ev.payload.presenter_uuid;
+          updateTeacherDisplay();
+        }
+      }
+      else if (ev.type === 'chat') {
+        const div = createChatMessageElement(ev.payload, ev.timeMs);
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+      else {
+        console.warn(`Unknown event type: ${ev.type}`);
+      }
+
+      playIndex++;
+    }
+
+    rafHandle = requestAnimationFrame(frame);
+  }
+
+  rafHandle = requestAnimationFrame(frame);
+}
+
+function cancelSyncLoop() {
+  if (rafHandle) cancelAnimationFrame(rafHandle);
+  rafHandle = null;
+}
+
+function togglePlay() {
+  if (!events.length) {
+    alert("Load a replay first.");
+    return;
+  }
+
+  // Check for audio URL
+  if (!audio.src) {
+    if (currentAudioUrl) {
+      loadAudio(currentAudioUrl);
+    } else {
+      // Try debug panel
+      const debugUrl = document.getElementById('audioUrl')?.value.trim();
+      if (debugUrl) {
+        currentAudioUrl = debugUrl;
+        loadAudio(debugUrl);
+      } else {
+        alert("No audio source available. Please load a replay first.");
+        return;
+      }
+    }
+  }
+
+  if (audio.paused) {
+    playIndex = 0;
+    const nowMs = audio.currentTime * 1000;
+    while (playIndex < events.length && events[playIndex].timeMs <= nowMs) playIndex++;
+
+    audio.play().catch(e => {
+      console.error("Playback failed:", e);
+      alert("Could not play audio. Check console for details.");
+    });
+    
+    document.getElementById('playBtn').innerHTML = '<i class="fas fa-pause"></i>';
+    applyEventsUpTo(nowMs);
+    startSyncLoop();
+  } else {
+    audio.pause();
+    document.getElementById('playBtn').innerHTML = '<i class="fas fa-play"></i>';
+    cancelSyncLoop();
+  }
+}
+
+function registerSlide(slideId) {
+  if (slideId && !slideOrder.includes(slideId)) {
+    slideOrder.push(slideId);
+  }
+}
+
+function updateSlideIndicator() {
+  const slideIndex = currentSlide ? slideOrder.indexOf(currentSlide) + 1 : 0;
+  const total = slideOrder.length || totalSlides || '?';
+  document.getElementById('slideIndicator').textContent = `Slide ${slideIndex}/${total}`;
+}
+
+function restart() {
+  audio.pause();
+  audio.currentTime = 0;
+  playIndex = 0;
+  applyEventsUpTo(0);
+  updateSlideIndicator();
+  chatBox.innerHTML = "";
+  document.getElementById('playBtn').innerHTML = '<i class="fas fa-play"></i>';
+  cancelSyncLoop();
+}
+
+audio.addEventListener('seeked', ()=> {
+  const nowMs = audio.currentTime * 1000;
+  applyEventsUpTo(nowMs);
+  playIndex = 0;
+  while (playIndex < events.length && events[playIndex].timeMs <= nowMs) playIndex++;
+});
+
+audio.addEventListener('loadedmetadata', ()=> applyEventsUpTo(0));
+
+audio.addEventListener('ended', function() {
+  document.getElementById('playBtn').innerHTML = '<i class="fas fa-play"></i>';
+  cancelSyncLoop();
+});
+
+function clearAll() {
+  document.getElementById('input').value = '';
+  document.getElementById('audioUrl').value = '';
+  document.getElementById('timestampInput').value = '0';
+  
+  // Reset VTT URL input
+  const vttUrlInput = document.getElementById('vttUrlInput');
+  if (vttUrlInput) vttUrlInput.value = '';
+  
+  // Reset global variables
+  currentAudioUrl = null;  // Reset audio URL
+  events = [];
+  slideBackgrounds = {};
+  currentSlide = null;
+  objects = {};
+  playIndex = 0;
+  key = null;
+  totalSlides = 0;
+  slideOrder = [];
+  rawVTT = '';
+  participants = {};
+  globalYOffset = 0;        // Reset scroll offset
+  currentPresenterUuid = null; // Reset current presenter
+  apiTeacherName = null;     // Reset API teacher name
+  recordingDateISO = null;   // Reset recording date
+
+  // Clear UI
+  const chatBox = document.getElementById('chatBox');
+  if (chatBox) chatBox.innerHTML = '';
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  document.getElementById('recordingInfo').style.display = 'none';
+  document.querySelector('.recording-year').textContent = '?';
+  document.querySelector('.recording-monthday').textContent = '?';
+  document.querySelector('.recording-time').textContent = '?';
+  document.querySelector('.teacher-name').textContent = '?';
+  document.getElementById('infoDate').textContent = '-';
+  document.getElementById('infoTeacher').textContent = '-';
+  document.getElementById('infoDate').textContent = '-';
+  document.querySelector('.status-dot').className = 'status-dot';
+  document.querySelector('.status-text').textContent = 'Ready';
+  document.getElementById('playBtn').innerHTML = '<i class="fas fa-play"></i>';
+  
+  // Reset audio
+  audio.pause();
+  audio.src = '';
+  
+  // Reset slide indicator
+  document.getElementById('slideIndicator').textContent = 'Slide 0/0';
+  
+  // Clear participants list
+  renderParticipantsList();
+}
+
+// ================ DEBUG PANEL DRAG & RESIZE ================
+const debugPanel = document.getElementById('debugPanel');
+const debugHeader = document.getElementById('debugHeader');
+const debugResizeHandle = document.querySelector('.debug-resize-handle');
+
+if (debugHeader) {
+  debugHeader.addEventListener('mousedown', startDebugDrag);
+}
+document.addEventListener('mousemove', onDebugDrag);
+document.addEventListener('mouseup', stopDebugDrag);
+
+if (debugResizeHandle) {
+  debugResizeHandle.addEventListener('mousedown', startDebugResize);
+}
+document.addEventListener('mousemove', onDebugResize);
+document.addEventListener('mouseup', stopDebugResize);
+
+function startDebugDrag(e) {
+  if (e.target.closest('button')) return; // Don't drag when clicking buttons
+  debugIsDragging = true;
+  debugDragOffsetX = e.clientX - debugPanel.offsetLeft;
+  debugDragOffsetY = e.clientY - debugPanel.offsetTop;
+  debugPanel.style.transition = 'none';
+  e.preventDefault();
+}
+
+function onDebugDrag(e) {
+  if (!debugIsDragging) return;
+  
+  let newLeft = e.clientX - debugDragOffsetX;
+  let newTop = e.clientY - debugDragOffsetY;
+  
+  // Constrain to viewport
+  newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - debugPanel.offsetWidth));
+  newTop = Math.max(0, Math.min(newTop, window.innerHeight - debugPanel.offsetHeight));
+  
+  debugPanel.style.left = newLeft + 'px';
+  debugPanel.style.top = newTop + 'px';
+  debugPanel.style.right = 'auto';
+  debugPanel.style.bottom = 'auto';
+}
+
+function stopDebugDrag() {
+  debugIsDragging = false;
+  debugPanel.style.transition = '';
+}
+
+function startDebugResize(e) {
+  debugIsResizing = true;
+  debugInitialWidth = debugPanel.offsetWidth;
+  debugInitialHeight = debugPanel.offsetHeight;
+  debugInitialMouseX = e.clientX;
+  debugInitialMouseY = e.clientY;
+  debugPanel.style.transition = 'none';
+  e.preventDefault();
+  e.stopPropagation();
+}
+
+function onDebugResize(e) {
+  if (!debugIsResizing) return;
+  
+  const dx = e.clientX - debugInitialMouseX;
+  const dy = e.clientY - debugInitialMouseY;
+  
+  let newWidth = debugInitialWidth + dx;
+  let newHeight = debugInitialHeight + dy;
+  
+  // Apply constraints
+  newWidth = Math.max(300, Math.min(newWidth, window.innerWidth - debugPanel.offsetLeft - 20));
+  newHeight = Math.max(200, Math.min(newHeight, window.innerHeight - debugPanel.offsetTop - 20));
+  
+  debugPanel.style.width = newWidth + 'px';
+  debugPanel.style.height = newHeight + 'px';
+}
+
+function stopDebugResize() {
+  debugIsResizing = false;
+  debugPanel.style.transition = '';
+}
+
+function copyVTTUrl() {
+  if (!vttUrl) {
+    alert('No VTT URL available');
+    return;
+  }
+  navigator.clipboard.writeText(vttUrl).then(() => {
+    alert('VTT URL copied to clipboard!');
+  }).catch(() => {
+    alert('Failed to copy URL');
+  });
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+  // Don't trigger if typing in input
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  
+  switch(e.code) {
+    case 'Space':
+      e.preventDefault();
+      togglePlay();
+      break;
+    case 'ArrowLeft':
+      skipBackward();
+      break;
+    case 'ArrowRight':
+      skipForward();
+      break;
+    case 'KeyF':
+      toggleFullscreen();
+      break;
+    case 'KeyR':
+      restart();
+      break;
+  }
+});
+
+/*=================================
+GP7 Recording Player v12.1 Beta
+by JoeNotSeth
+
+Special thanks to:
+
+@CC Z
+@Sam King
+@Solo Man
+
+===================================*/
+</script>
+</body>
+</html>
