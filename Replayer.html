@@ -157,12 +157,21 @@ body {
   100% { opacity: 1; }
 }
 
-.settings-icon {
+.option-section {
+  opacity: 0.8;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  border-radius: 50%;
   cursor: pointer;
-  opacity: 0.7;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.settings-icon:hover {
+.option-section:hover {
   opacity: 1;
 }
 
@@ -924,7 +933,7 @@ body {
   background: linear-gradient(135deg, transparent 50%, #3a5a87 50%);
 }
 </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2-beta3/css/all.min.css">
 </head>
 <body> 
   <!-- Title Bar --> 
@@ -958,9 +967,16 @@ body {
     
     <div class="status-indicator" id="statusIndicator"> 
       <span class="status-dot"></span> 
-      <span class="status-text">Not Loaded</span> 
-      <i class="fas fa-cog settings-icon"></i> 
+      <span class="status-text">Not Loaded</span>  
     </div> 
+    <div class="option-section" id="optionSection">
+      <button id="settingsBtn" onclick="toggleSettings()" class="option-section"> 
+        <i class="fas fa-cog settings-icon"></i> 
+      </button> 
+      <button id="utilityBtn" onclick="toggleUtility()" class="option-section"> 
+        <i class="fa-solid fa-screwdriver-wrench"></i>
+      </button> 
+    </div>
   </div> 
  
   <!-- Main Layout --> 
@@ -2339,8 +2355,18 @@ function clearAll() {
   // Clear participants list
   renderParticipantsList();
 }
+// ================ OPTION SECTION ================
+// -- Settings Button --
+function toggleSettings() {
+  console.log("toggleSettings() activated")
+}
 
-// ================ DEBUG PANEL DRAG & RESIZE ================
+// -- Utility Button --
+function toggleUtility() {
+  console.log("toggleUtility() activated")
+}
+
+// ================ DEBUG PANEL  ================
 const debugPanel = document.getElementById('debugPanel');
 const debugHeader = document.getElementById('debugHeader');
 const debugResizeHandle = document.querySelector('.debug-resize-handle');
