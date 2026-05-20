@@ -159,8 +159,10 @@ body {
 
 .option-section {
   opacity: 0.8;
+  gap: 8px;
   width: 36px;
   height: 36px;
+  font-size: 16px;
   border: none;
   background: none;
   border-radius: 50%;
@@ -169,6 +171,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  
 }
 
 .option-section:hover {
@@ -932,8 +935,62 @@ body {
 .debug-resize-handle:hover {
   background: linear-gradient(135deg, transparent 50%, #3a5a87 50%);
 }
+
+/* Generic panel styles (used by all panels) */
+.floating-panel {
+  position: fixed !important;
+  background: #f8f9fa;
+  border: 1px solid #4a6fa5;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  overflow: hidden;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  min-width: 280px;
+  min-height: 200px;
+}
+.floating-panel .panel-header {
+  padding: 10px 16px;
+  background: #4a6fa5;
+  color: white;
+  cursor: move;
+  user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.floating-panel .panel-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.floating-panel .panel-header .close-btn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.floating-panel .panel-content {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+.floating-panel .resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, #4a6fa5 50%);
+  border-bottom-right-radius: 8px;
+}
 </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2-beta3/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body> 
   <!-- Title Bar --> 
@@ -1073,53 +1130,14 @@ body {
     </div> 
   </div> 
   
+  
   <!-- Hidden Audio Element --> 
   <audio id="audio"></audio> 
-  
-  <!-- Debug Panel (Hidden by default) -->
-  <div id="debugPanel" class="debug-panel" style="display: none; position: fixed; bottom: 20px; right: 20px; width: 450px; max-width: 80vw; height: auto; min-height: 300px; max-height: 80vh; z-index: 1000;">
-    <div class="debug-header" id="debugHeader">
-      <h4>Debug Panel</h4>
-      <button onclick="toggleDebug()" class="close-btn">Close</button>
-    </div>
-    
-    <div class="debug-content">
-      <p>Raw Log (auto filled after loading):</p>
-      <textarea id="input" placeholder="auto-filled VTT log will appear here..." rows="6"></textarea>
-      
-      <div class="vtt-info">
-        <span>VTT File:</span>
-        <input id="vttUrlInput" type="text" readonly placeholder="VTT URL will appear here" value="">
-        <button onclick="copyVTTUrl()" title="Copy URL to clipboard"><i class="fas fa-copy"></i></button>
-      </div>
-      
-      <div class="audio-url-row">
-        <span>Audio File: </span>
-        <input id="audioUrl" type="text" placeholder="Audio URL will appear here" readonly>
-        <button onclick="loadAudioFromDebug()">Load Audio</button>
-      </div>
-      
-      <div class="timestamp-jump">
-        <label>Jump to timestamp (ms):</label>
-        <div class="timestamp-row">
-          <input type="number" id="timestampInput" placeholder="e.g., 108000" value="0" min="0">
-          <button onclick="jumpToTimestamp()">Go</button>
-        </div>
-        <small style="display: block; margin-top: 4px; color: #6c757d;">Enter milliseconds (e.g., 108000 = 1:48)</small>
-      </div>
-      
-      <div class="debug-actions">
-        <button onclick="clearAll()">Clear All</button>
-      </div>
-    </div>
-    
-    <!-- Resize Handle -->
-    <div class="debug-resize-handle"></div>
-  </div>
-</body>
+  </body>
+
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-
+  
 <script>
 /* ================================================================
   NOTHING HERE, GO AWAY.
@@ -2366,99 +2384,289 @@ function toggleUtility() {
   console.log("toggleUtility() activated")
 }
 
-// ================ DEBUG PANEL  ================
-const debugPanel = document.getElementById('debugPanel');
-const debugHeader = document.getElementById('debugHeader');
-const debugResizeHandle = document.querySelector('.debug-resize-handle');
-
-if (debugHeader) {
-  debugHeader.addEventListener('mousedown', startDebugDrag);
-}
-document.addEventListener('mousemove', onDebugDrag);
-document.addEventListener('mouseup', stopDebugDrag);
-
-if (debugResizeHandle) {
-  debugResizeHandle.addEventListener('mousedown', startDebugResize);
-}
-document.addEventListener('mousemove', onDebugResize);
-document.addEventListener('mouseup', stopDebugResize);
-
-function startDebugDrag(e) {
-  if (e.target.closest('button')) return; // Don't drag when clicking buttons
-  debugIsDragging = true;
-  debugDragOffsetX = e.clientX - debugPanel.offsetLeft;
-  debugDragOffsetY = e.clientY - debugPanel.offsetTop;
-  debugPanel.style.transition = 'none';
-  e.preventDefault();
-}
-
-function onDebugDrag(e) {
-  if (!debugIsDragging) return;
-  
-  let newLeft = e.clientX - debugDragOffsetX;
-  let newTop = e.clientY - debugDragOffsetY;
-  
-  // Constrain to viewport
-  newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - debugPanel.offsetWidth));
-  newTop = Math.max(0, Math.min(newTop, window.innerHeight - debugPanel.offsetHeight));
-  
-  debugPanel.style.left = newLeft + 'px';
-  debugPanel.style.top = newTop + 'px';
-  debugPanel.style.right = 'auto';
-  debugPanel.style.bottom = 'auto';
-}
-
-function stopDebugDrag() {
-  debugIsDragging = false;
-  debugPanel.style.transition = '';
-}
-
-function startDebugResize(e) {
-  debugIsResizing = true;
-  debugInitialWidth = debugPanel.offsetWidth;
-  debugInitialHeight = debugPanel.offsetHeight;
-  debugInitialMouseX = e.clientX;
-  debugInitialMouseY = e.clientY;
-  debugPanel.style.transition = 'none';
-  e.preventDefault();
-  e.stopPropagation();
-}
-
-function onDebugResize(e) {
-  if (!debugIsResizing) return;
-  
-  const dx = e.clientX - debugInitialMouseX;
-  const dy = e.clientY - debugInitialMouseY;
-  
-  let newWidth = debugInitialWidth + dx;
-  let newHeight = debugInitialHeight + dy;
-  
-  // Apply constraints
-  newWidth = Math.max(300, Math.min(newWidth, window.innerWidth - debugPanel.offsetLeft - 20));
-  newHeight = Math.max(200, Math.min(newHeight, window.innerHeight - debugPanel.offsetTop - 20));
-  
-  debugPanel.style.width = newWidth + 'px';
-  debugPanel.style.height = newHeight + 'px';
-}
-
-function stopDebugResize() {
-  debugIsResizing = false;
-  debugPanel.style.transition = '';
-}
-
-function copyVTTUrl() {
-  if (!vttUrl) {
-    alert('No VTT URL available');
-    return;
+// ================ FLOATING PANEL MANAGER ================
+class FloatingPanel {
+  constructor(options) {
+    this.id = options.id;
+    this.title = options.title;
+    this.defaultLeft = options.left || 20;
+    this.defaultTop = options.top || 20;
+    this.width = options.width || 450;
+    this.height = options.height || 300;
+    this.contentHtml = options.contentHtml || '<p>Panel content</p>';
+    this.onClose = options.onClose || null;
+    
+    this.element = null;
+    this.isDragging = false;
+    this.isResizing = false;
+    this.dragOffsetX = 0;
+    this.dragOffsetY = 0;
+    this.initialWidth = 0;
+    this.initialHeight = 0;
+    this.initialMouseX = 0;
+    this.initialMouseY = 0;
+    
+    this.create();
   }
-  navigator.clipboard.writeText(vttUrl).then(() => {
-    alert('VTT URL copied to clipboard!');
-  }).catch(() => {
-    alert('Failed to copy URL');
-  });
+  
+  create() {
+    // Create main container
+    const panel = document.createElement('div');
+    panel.id = this.id;
+    panel.className = 'floating-panel';
+    panel.style.width = this.width + 'px';
+    panel.style.height = this.height + 'px';
+    panel.style.left = this.defaultLeft + 'px';
+    panel.style.top = this.defaultTop + 'px';
+    
+    // Header
+    const header = document.createElement('div');
+    header.className = 'panel-header';
+    header.innerHTML = `
+      <h4>${this.title}</h4>
+      <button class="close-btn">Close</button>
+    `;
+    
+    // Content area
+    const content = document.createElement('div');
+    content.className = 'panel-content';
+    content.innerHTML = this.contentHtml;
+    
+    // Resize handle
+    const resizeHandle = document.createElement('div');
+    resizeHandle.className = 'resize-handle';
+    
+    panel.appendChild(header);
+    panel.appendChild(content);
+    panel.appendChild(resizeHandle);
+    document.body.appendChild(panel);
+    
+    this.element = panel;
+    this.contentDiv = content;
+    
+    // Attach events
+    header.addEventListener('mousedown', this.startDrag.bind(this));
+    resizeHandle.addEventListener('mousedown', this.startResize.bind(this));
+    header.querySelector('.close-btn').addEventListener('click', () => this.hide());
+    
+    // Global listeners
+    document.addEventListener('mousemove', this.onDrag.bind(this));
+    document.addEventListener('mouseup', this.stopDrag.bind(this));
+    document.addEventListener('mousemove', this.onResize.bind(this));
+    document.addEventListener('mouseup', this.stopResize.bind(this));
+  }
+  
+  startDrag(e) {
+    if (e.target.closest('button')) return;
+    this.isDragging = true;
+    this.dragOffsetX = e.clientX - this.element.offsetLeft;
+    this.dragOffsetY = e.clientY - this.element.offsetTop;
+    this.element.style.transition = 'none';
+    e.preventDefault();
+  }
+  
+  onDrag(e) {
+    if (!this.isDragging) return;
+    let newLeft = e.clientX - this.dragOffsetX;
+    let newTop = e.clientY - this.dragOffsetY;
+    newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - this.element.offsetWidth));
+    newTop = Math.max(0, Math.min(newTop, window.innerHeight - this.element.offsetHeight));
+    this.element.style.left = newLeft + 'px';
+    this.element.style.top = newTop + 'px';
+    this.element.style.right = 'auto';
+    this.element.style.bottom = 'auto';
+  }
+  
+  stopDrag() {
+    this.isDragging = false;
+    this.element.style.transition = '';
+  }
+  
+  startResize(e) {
+    this.isResizing = true;
+    this.initialWidth = this.element.offsetWidth;
+    this.initialHeight = this.element.offsetHeight;
+    this.initialMouseX = e.clientX;
+    this.initialMouseY = e.clientY;
+    this.element.style.transition = 'none';
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  
+  onResize(e) {
+    if (!this.isResizing) return;
+    const dx = e.clientX - this.initialMouseX;
+    const dy = e.clientY - this.initialMouseY;
+    let newWidth = this.initialWidth + dx;
+    let newHeight = this.initialHeight + dy;
+    newWidth = Math.max(280, Math.min(newWidth, window.innerWidth - this.element.offsetLeft - 20));
+    newHeight = Math.max(200, Math.min(newHeight, window.innerHeight - this.element.offsetTop - 20));
+    this.element.style.width = newWidth + 'px';
+    this.element.style.height = newHeight + 'px';
+  }
+  
+  stopResize() {
+    this.isResizing = false;
+    this.element.style.transition = '';
+  }
+  
+  show() {
+    this.element.style.display = 'flex';
+  }
+  
+  hide() {
+    this.element.style.display = 'none';
+    if (this.onClose) this.onClose();
+  }
+  
+  toggle() {
+    if (this.element.style.display === 'none') {
+      this.show();
+    } else {
+      this.hide();
+    }
+  }
+  
+  setContent(html) {
+    this.contentDiv.innerHTML = html;
+  }
 }
 
-// Keyboard shortcuts
+// ================ CREATE PANELS ================
+let debugPanelInstance = null;
+let settingsPanelInstance = null;
+let utilityPanelInstance = null;
+
+function initPanels() {
+  // Debug Panel (replicates old debug panel)
+  debugPanelInstance = new FloatingPanel({
+    id: 'debugPanel',
+    title: 'Debug Panel',
+    left: window.innerWidth - 470,
+    top: window.innerHeight - 340,
+    width: 450,
+    height: 320,
+    contentHtml: `
+      <p>Raw Log (auto filled after loading):</p>
+      <textarea id="input" rows="4" style="width:100%; font-family:monospace;"></textarea>
+      <div class="vtt-info" style="margin:8px 0;">
+        <span>VTT File:</span>
+        <input id="vttUrlInput" type="text" readonly style="flex:1;">
+        <button onclick="copyVTTUrl()">Copy</button>
+      </div>
+      <div class="audio-url-row" style="margin:8px 0;">
+        <span>Audio File:</span>
+        <input id="audioUrl" type="text" readonly style="flex:1;">
+        <button onclick="loadAudioFromDebug()">Load Audio</button>
+      </div>
+      <div class="timestamp-jump">
+        <label>Jump to timestamp (ms):</label>
+        <div style="display:flex; gap:8px;">
+          <input type="number" id="timestampInput" placeholder="e.g., 108000" value="0">
+          <button onclick="jumpToTimestamp()">Go</button>
+        </div>
+      </div>
+      <div class="debug-actions" style="margin-top:12px; text-align:right;">
+        <button onclick="clearAll()">Clear All</button>
+      </div>
+    `
+  });
+  
+  // Settings Panel (placeholder)
+  settingsPanelInstance = new FloatingPanel({
+    id: 'settingsPanel',
+    title: 'Settings',
+    left: 100,
+    top: 100,
+    width: 400,
+    height: 300,
+    contentHtml: `
+      <div style="padding:8px;">
+        <h4>Playback Preferences</h4>
+        <label><input type="checkbox" id="autoLoadAudio"> Auto-load audio on replay load</label><br><br>
+        <label>Default playback speed:
+          <select id="defaultSpeed">
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+          </select>
+        </label><br><br>
+        <button onclick="alert('Settings saved (demo)')">Save</button>
+      </div>
+    `
+  });
+  
+  // Utility Panel (placeholder)
+  utilityPanelInstance = new FloatingPanel({
+    id: 'utilityPanel',
+    title: 'Utility',
+    left: 200,
+    top: 200,
+    width: 400,
+    height: 300,
+    contentHtml: `
+      <div style="padding:8px;">
+        <h4>Tools</h4>
+        <button onclick="exportChatLog()">Export Chat Log (JSON)</button><br><br>
+        <button onclick="exportParticipantList()">Export Participants (CSV)</button><br><br>
+        <button onclick="alert('Force sync (demo)')">Resync Canvas</button>
+      </div>
+    `
+  });
+  
+  // Hide all initially
+  settingsPanelInstance.hide();
+  utilityPanelInstance.hide();
+  debugPanelInstance.hide();
+}
+
+// Helper functions for utility panel (add to global scope)
+window.exportChatLog = function() {
+  const chatEvents = events.filter(ev => ev.type === 'chat');
+  const dataStr = JSON.stringify(chatEvents, null, 2);
+  const blob = new Blob([dataStr], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'chat_log.json';
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+window.exportParticipantList = function() {
+  let csv = 'Name,Role,Online\n';
+  for (const [uuid, p] of Object.entries(participants)) {
+    const role = (uuid === currentPresenterUuid) ? 'teacher' : (p.role || 'student');
+    csv += `"${p.name}",${role},Online\n`;
+  }
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'participants.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+// Override old toggleDebug to use the new panel
+window.toggleDebug = function() {
+  if (debugPanelInstance) debugPanelInstance.toggle();
+};
+
+// Add toggle functions for settings and utility
+window.toggleSettings = function() {
+  if (settingsPanelInstance) settingsPanelInstance.toggle();
+};
+
+window.toggleUtility = function() {
+  if (utilityPanelInstance) utilityPanelInstance.toggle();
+};
+
+// -- Initialize floating panels --
+initPanels();
+
+// -- Keyboard shortcuts --
 document.addEventListener('keydown', function(e) {
   // Don't trigger if typing in input
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -2484,7 +2692,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 /*=================================
-GP7 Recording Player v12.1 Beta
+GP7 Recording Player v12.~
 by JoeNotSeth
 
 Special thanks to:
@@ -2493,6 +2701,8 @@ Special thanks to:
 @Sam King
 @Solo Man
 
+If theres any bugs or issues, please report them on the GitHub.
+https://github.com/JoeNotSeth/GP7_Replayer/issues
 ===================================*/
 </script>
 </body>
