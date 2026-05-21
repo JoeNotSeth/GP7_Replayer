@@ -2639,6 +2639,12 @@ function initPanels() {
           <button onclick="jumpToTimestamp()">Go</button>
         </div>
       </div>
+      <div class="debug-section">
+        <label>Reset local settings</label>
+        <div class="debug-row">
+          <button onclick="resetSavedSettings()">Reset</button>
+        </div>
+      </div>
       <div class="debug-actions">
         <button onclick="clearAll()"><i class="fas fa-trash-alt"></i> Clear All</button>
         <button onclick="debugPanelInstance.hide()">Close</button>
@@ -2841,9 +2847,11 @@ window.resyncCanvas = function() {
 
 window.saveSettings = function() {
   const autoLoad = document.getElementById('autoLoadAudio').checked;
+  const rememberLastPanel = document.getElementById('rememberLastPanel').checked;
   const speed = document.getElementById('defaultSpeed').value;
   const autoClose = document.getElementById('autoCloseParentPanel').checked;
   localStorage.setItem('gp7_autoLoadAudio', autoLoad);
+  localStorage.setItem('gp7_rememberLastPanel', rememberLastPanel);
   localStorage.setItem('gp7_defaultSpeed', speed);
   localStorage.setItem('gp7_autoCloseParentPanel', autoClose);
   // Also apply speed to current player if audio exists
@@ -2857,6 +2865,7 @@ window.saveSettings = function() {
 // Load saved settings on page start
 function loadSavedSettings() {
   const autoLoad = localStorage.getItem('gp7_autoLoadAudio');
+  const rememberLastPanel = localStorage.getItem('gp7_rememberLastPanel');
   const speed = localStorage.getItem('gp7_defaultSpeed');
   const autoClose = localStorage.getItem('gp7_autoCloseParentPanel');
 
@@ -2864,6 +2873,11 @@ function loadSavedSettings() {
   if (autoLoad !== null) {
     const chk = document.getElementById('autoLoadAudio');
     if (chk) chk.checked = (autoLoad === 'true');
+  }
+
+  if (rememberLastPanel !== null) {
+    const chk = document.getElementById('rememberLastPanel');
+    if (chk) chk.checked = (rememberLastPanel === 'true');
   }
 
   // Update default speed select inside Settings panel
@@ -2890,6 +2904,17 @@ function loadSavedSettings() {
   if (speedLabel && speed !== null) {
     speedLabel.textContent = parseFloat(speed).toFixed(1) + 'x';
   }
+}
+
+// Clear saved settings
+function resetSavedSettings() {
+  localStorage.removeItem('gp7_autoLoadAudio');
+  localStorage.removeItem('gp7_rememberLastPanel');
+  localStorage.removeItem('gp7_defaultSpeed');
+  localStorage.setItem('gp7_autoCloseParentPanel', 'true');
+  initPanels();
+  loadSavedSettings(); // Refresh
+  alert('Settings cleared!');
 }
 
 window.resetView = function() {
