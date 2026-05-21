@@ -2859,22 +2859,38 @@ function loadSavedSettings() {
   const autoLoad = localStorage.getItem('gp7_autoLoadAudio');
   const speed = localStorage.getItem('gp7_defaultSpeed');
   const autoClose = localStorage.getItem('gp7_autoCloseParentPanel');
+
+  // Update auto-load audio checkbox
   if (autoLoad !== null) {
     const chk = document.getElementById('autoLoadAudio');
     if (chk) chk.checked = (autoLoad === 'true');
   }
+
+  // Update default speed select inside Settings panel
   if (speed !== null && document.getElementById('defaultSpeed')) {
     document.getElementById('defaultSpeed').value = speed;
-    if (audio) audio.playbackRate = parseFloat(speed);
-    document.getElementById('playbackSpeed').value = speed;
+    // Also update the main playback speed dropdown and audio rate
+    const mainSpeedSelect = document.getElementById('playbackSpeed');
+    if (mainSpeedSelect) {
+      mainSpeedSelect.value = speed;
+      if (audio && audio.playbackRate) {
+        audio.playbackRate = parseFloat(speed);
+      }
+    }
   }
+
+  // Update auto-close parent panel checkbox
   if (autoClose !== null) {
     const chk = document.getElementById('autoCloseParentPanel');
     if (chk) chk.checked = (autoClose === 'true');
   }
+
+  // Optional: force a UI refresh for any element that shows current speed (e.g., a label)
+  const speedLabel = document.querySelector('.current-speed-label');
+  if (speedLabel && speed !== null) {
+    speedLabel.textContent = parseFloat(speed).toFixed(1) + 'x';
+  }
 }
-// Call it after panels are created
-loadSavedSettings();
 
 window.resetView = function() {
   canvasScale = 1;
@@ -2957,6 +2973,9 @@ function openCalculator() {
 
 // -- Initialize floating panels --
 initPanels();
+
+// Call it after panels are initialized
+loadSavedSettings();
 
 // ============= Utils ============
 
