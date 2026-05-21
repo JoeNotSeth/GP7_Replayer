@@ -2655,7 +2655,7 @@ function initPanels() {
   left: 100,
   top: 100,
   width: 420,
-  height: 380,
+  height: 420,  <!-- Increase height to accommodate new option -->
   contentHtml: `
     <style>
       .settings-group {
@@ -2710,6 +2710,9 @@ function initPanels() {
         </label>
         <label>
           <input type="checkbox" id="rememberLastPanel"> Remember panel positions
+        </label>
+        <label>
+          <input type="checkbox" id="autoCloseParentPanel" checked="checked"> Automatically close Utility panel when opening calculator
         </label>
       </div>
       <div class="settings-group">
@@ -2777,15 +2780,20 @@ function initPanels() {
       .utility-grid button:active {
         transform: translateY(1px);
       }
+      .utility-grid button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
     </style>
     <div class="utility-grid">
-      <button onclick="exportChatLog()">
-        <i class="fas fa-comment-dots"></i>
-        Export Chat
+      <button disabled>
+        <i class="fas fa-download"></i>
+        Download (Disabled)
       </button>
-      <button onclick="exportParticipantList()">
-        <i class="fas fa-users"></i>
-        Export People
+      <button onclick="openCalculator()">
+        <i class="fas fa-calculator"></i>
+        Calculator
       </button>
       <button onclick="resyncCanvas()">
         <i class="fas fa-sync-alt"></i>
@@ -2834,8 +2842,10 @@ window.resyncCanvas = function() {
 window.saveSettings = function() {
   const autoLoad = document.getElementById('autoLoadAudio').checked;
   const speed = document.getElementById('defaultSpeed').value;
+  const autoClose = document.getElementById('autoCloseParentPanel').checked;
   localStorage.setItem('gp7_autoLoadAudio', autoLoad);
   localStorage.setItem('gp7_defaultSpeed', speed);
+  localStorage.setItem('gp7_autoCloseParentPanel', autoClose);
   // Also apply speed to current player if audio exists
   if (audio && audio.playbackRate) {
     audio.playbackRate = parseFloat(speed);
@@ -2848,6 +2858,7 @@ window.saveSettings = function() {
 function loadSavedSettings() {
   const autoLoad = localStorage.getItem('gp7_autoLoadAudio');
   const speed = localStorage.getItem('gp7_defaultSpeed');
+  const autoClose = localStorage.getItem('gp7_autoCloseParentPanel');
   if (autoLoad !== null) {
     const chk = document.getElementById('autoLoadAudio');
     if (chk) chk.checked = (autoLoad === 'true');
@@ -2856,6 +2867,10 @@ function loadSavedSettings() {
     document.getElementById('defaultSpeed').value = speed;
     if (audio) audio.playbackRate = parseFloat(speed);
     document.getElementById('playbackSpeed').value = speed;
+  }
+  if (autoClose !== null) {
+    const chk = document.getElementById('autoCloseParentPanel');
+    if (chk) chk.checked = (autoClose === 'true');
   }
 }
 // Call it after panels are created
@@ -2881,21 +2896,6 @@ window.copyVTTUrl = function() {
   }).catch(() => alert('Copy failed'));
 };
 
-window.exportParticipantList = function() {
-  let csv = 'Name,Role,Online\n';
-  for (const [uuid, p] of Object.entries(participants)) {
-    const role = (uuid === currentPresenterUuid) ? 'teacher' : (p.role || 'student');
-    csv += `"${p.name}",${role},Online\n`;
-  }
-  const blob = new Blob([csv], {type: 'text/csv'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'participants.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-};
-
 // Override old toggleDebug to use the new panel
 window.toggleDebug = function() {
   if (debugPanelInstance) debugPanelInstance.toggle();
@@ -2910,8 +2910,54 @@ window.toggleUtility = function() {
   if (utilityPanelInstance) utilityPanelInstance.toggle();
 };
 
+// ================ CALCULATOR PANEL ================
+let calculatorPanelInstance = null;
+
+function openCalculator() {
+  // If a calculator panel already exists, just show it
+  if (calculatorPanelInstance) {
+    calculatorPanelInstance.show();
+  } else {
+    // Create a new calculator panel
+    calculatorPanelInstance = new FloatingPanel({
+      id: 'calculatorPanel',
+      title: 'Desmos Scientific Calculator',
+      left: 150,
+      top: 150,
+      width: 500,
+      height: 550,
+      contentHtml: `
+        <style>
+          .calculator-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 6px;
+          }
+        </style>
+        <iframe src="https://www.desmos.com/scientific" 
+                class="calculator-iframe" 
+                title="Desmos Scientific Calculator"
+                allowfullscreen>
+        </iframe>
+      `
+    });
+    calculatorPanelInstance.show();
+  }
+  
+  // Check if we should auto-close the parent (Utility) panel
+  const autoClose = localStorage.getItem('gp7_autoCloseParentPanel') === 'true';
+  if (autoClose && utilityPanelInstance) {
+    utilityPanelInstance.hide();
+  }
+}
+
+
+
 // -- Initialize floating panels --
 initPanels();
+
+// ============= Utils ============
 
 // -- Keyboard shortcuts --
 document.addEventListener('keydown', function(e) {
