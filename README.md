@@ -10,10 +10,12 @@ You Get:
 - Optimized Memory Usage
 - Smart Time And Canvas Controls
 - Better Canvas Controls
+- Integrated Calculators
+- Improved User Interface
 
 What's new:
-- Turned the settings Icon into button
-- Added an utility button
+- Integrated Calculators
+- More functions in utility panel
 
 If theres any bugs or issues, please report them on the GitHub.
 https://github.com/JoeNotSeth/GP7_Replayer/issues
