@@ -14,3 +14,7 @@ You Get:
 What's new:
 - Turned the settings Icon into button
 - Added an utility button
+
+If theres any bugs or issues, please report them on the GitHub.
+https://github.com/JoeNotSeth/GP7_Replayer/issues
+
