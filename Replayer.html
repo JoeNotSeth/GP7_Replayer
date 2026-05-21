@@ -2532,21 +2532,21 @@ class FloatingPanel {
   }
 }
 
-// ================ CREATE PANELS ================
+// ================ MAIN PANELS ================
 let debugPanelInstance = null;
 let settingsPanelInstance = null;
 let utilityPanelInstance = null;
 
 function initPanels() {
   // Debug Panel (replicates old debug panel)
-  // Retracted
+  // Folded
   debugPanelInstance = new FloatingPanel({
   id: 'debugPanel',
   title: 'Debug Panel',
   left: window.innerWidth - 470,
-  top: window.innerHeight - 400,
+  top: window.innerHeight - 570,
   width: 460,
-  height: 420,
+  height: 560,
   contentHtml: `
     <style>
       .debug-section {
@@ -2648,7 +2648,7 @@ function initPanels() {
 });
   
   // Settings Panel (placeholder)
-  // Retracted
+  // Folded
   settingsPanelInstance = new FloatingPanel({
   id: 'settingsPanel',
   title: 'Settings',
@@ -2736,7 +2736,7 @@ function initPanels() {
   
   // Utility Panel (placeholder)
   // Utility Panel – 田 shape 2x2 buttons
-  // Retracted
+  // Folded
   utilityPanelInstance = new FloatingPanel({
   id: 'utilityPanel',
   title: 'Utility',
@@ -2910,7 +2910,7 @@ window.toggleUtility = function() {
   if (utilityPanelInstance) utilityPanelInstance.toggle();
 };
 
-// ================ CALCULATOR PANEL ================
+// ---- Calculator Panel ----
 let calculatorPanelInstance = null;
 
 function openCalculator() {
@@ -2919,6 +2919,7 @@ function openCalculator() {
     calculatorPanelInstance.show();
   } else {
     // Create a new calculator panel
+    // Folded
     calculatorPanelInstance = new FloatingPanel({
       id: 'calculatorPanel',
       title: 'Desmos Scientific Calculator',
